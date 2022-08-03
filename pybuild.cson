@@ -1,0 +1,12 @@
+regexes:
+    function: '^def\\s+([^_][^\\s\\(\\)]+)'
+    class: '^class\\s+([^_][^\\s\\(\\):]+)'
+    global: '^([A-Z][A-Z_0-9]+)\\s*='
+
+tasks:
+    mkinit:
+        "shortcake": [
+            'function'
+            'class'
+            'global'
+        ]
