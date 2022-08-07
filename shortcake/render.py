@@ -23,6 +23,12 @@ from .size import (
 )
 from .utils import TAU
 
+
+# ===| Text |===
+
+Color = str
+
+
 # ===| Base classes |===
 
 
@@ -205,7 +211,6 @@ class Rectangle(Shape, Container):
         Container.render(self, ctx)
 
 
-# DEBUG: Debug this.
 @dc.dataclass
 class Arc(Renderable, Shape):
     radius: float = 20
@@ -235,26 +240,7 @@ class Arc(Renderable, Shape):
         ctx.stroke()
 
 
-# DEBUG: Debug this.
-class Text(Renderable):
-    color: ... = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
-    text: str = "Hello world!"
-    font_size: int = 20
-    font_face: str = "Iosevka Nerd Font"
-    font_slant: int = cairo.FONT_SLANT_NORMAL
-    font_weight: int = cairo.FONT_WEIGHT_NORMAL
-
-    def render(self, ctx):
-        ctx.select_font_face(self.font_face, self.font_slant, self.font_weight)
-        ctx.set_font_size(size)
-        ctx.set_source_rgba(*self.color)
-
-        (x, y, width, height, dx, dy) = ctx.text_extents(text)
-
-        ctx.move_to(*self.position - ([width, height] * self.anchor.to_arr()))
-        ctx.show_text(self.text)
-
-
+@dc.dataclass
 class RoundedRectangle(Rectangle):
     radius: float = 8
 
@@ -265,6 +251,117 @@ class RoundedRectangle(Rectangle):
         ctx.stroke()
 
         Container.render(self, ctx)
+
+
+@dc.dataclass(frozen=True)
+class TextState:
+    """The state of some text."""
+
+    fore: Color = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
+    # back: Color = None
+    slant: int = cairo.FONT_SLANT_NORMAL
+    weight: int = cairo.FONT_WEIGHT_NORMAL
+
+
+@dc.dataclass
+class ColoredText(Renderable):
+    font: str = "Iosevka Nerd Font"
+    font_size: int = 20
+    text: str = "Hello world"
+    default_state: TextState = TextState()
+    escape_indices: dict = dc.field(default_factory=dict)
+
+    def get_state(self, index):
+        """Return the state at some index."""
+
+        state = self.default_state
+
+        for key in sorted(self.escape_indices):
+            if key > index:
+                break
+            state = self.escape_indices[key]
+
+        return state
+
+    def set_state(self, start: int, end: int, state: TextState):
+        """Set the state between the start and end indices."""
+        self.escape_indices[start] = state
+        self.escape_indices = {
+            k: v
+            for k, v in self.escape_indices.items()
+            if k not in range(start + 1, end)
+        }
+        self.escape_indices[end] = self.default_state
+
+    def render(self, ctx):
+        """Render the text."""
+        ctx.select_font_face(
+            self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
+        )
+        (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
+        height = self.font_size
+
+        pos = self.position - ([width, height] * self.anchor.to_arr())
+        keys = sorted(self.escape_indices)
+        prev_state = self.default_state
+
+        index = 0
+        prev_index = 0
+
+        for index in keys:
+            x_distance = self._render_chunk(
+                self.text[prev_index:index], prev_state, pos, ctx
+            )
+            pos += [x_distance, 0]
+            prev_index = index
+            prev_state = self.escape_indices[index]
+
+        final_state = self.escape_indices[keys[-1]] if keys else self.default_state
+
+        self._render_chunk(self.text[index:], final_state, pos, ctx)
+
+    def _render_chunk(self, text, state, pos, ctx) -> int:
+        """Render a chunk of text at some position and return its width."""
+        ctx.select_font_face(self.font, state.slant, state.weight)
+        ctx.set_font_size(self.font_size)
+        ctx.set_source_rgba(*state.fore)
+
+        # Use the full block to get the full character size.
+        _, _, width, _, _, _ = ctx.text_extents("█")
+        width *= len(text)
+
+        ctx.move_to(*pos)
+        ctx.show_text(text)
+
+        return width
+
+
+@dc.dataclass
+class Text(Renderable):
+    color: ... = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
+    text: str = "Hello world!"
+    font_size: int = 20
+    font_face: str = "Iosevka Nerd Font"
+    font_slant: int = cairo.FONT_SLANT_NORMAL
+    font_weight: int = cairo.FONT_WEIGHT_NORMAL
+
+    def render(self, ctx):
+        ctx.select_font_face(self.font_face, self.font_slant, self.font_weight)
+        ctx.set_font_size(self.font_size)
+        ctx.set_source_rgba(*self.color)
+
+        (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
+        height = self.font_size
+
+        ctx.move_to(*self.position - ([width, height] * self.anchor.to_arr()))
+        ctx.show_text(self.text)
+        ctx.stroke()
+
+        # # DEBUG: Uncomment this to see circles.
+        # ctx.set_source_rgba(1, 0.2, 0, 1)
+        # ctx.arc(*self.position - ([width, height] * self.anchor.to_arr()), 4, 0, TAU)
+        # ctx.fill()
+        # ctx.stroke()
 
 
 # ===| Utilities |===

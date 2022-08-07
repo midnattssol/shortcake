@@ -3,6 +3,9 @@
 import enum
 
 import numpy as np
+import collections as col
+
+HELD_DOWN = col.defaultdict(lambda: False)
 
 
 class Direction(enum.Enum):

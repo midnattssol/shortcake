@@ -2,7 +2,8 @@
 from .enums import (
     Anchor,
     Direction,
-    Packing
+    Packing,
+    HELD_DOWN
 )
 from .interpolate import (
     clamp,
@@ -46,13 +47,15 @@ from .poller import Poller
 from .render import (
     rounded_rect,
     Arc,
+    ColoredText,
     Container,
     Rectangle,
     Renderable,
     RoundedRectangle,
     Shape,
     Sized,
-    Text
+    Text,
+    TextState
 )
 from .size import (
     Absolute,
@@ -68,6 +71,7 @@ from .utils import (
     cartesian2polar,
     get_nf_icon,
     index_or,
+    lerp,
     normalize_color,
     polar2cartesian,
     rotate2d,

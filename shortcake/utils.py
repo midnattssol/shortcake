@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.10
 """Utilities."""
-import copy
 import dataclasses as dc
 import time
 import typing as t
@@ -8,6 +7,7 @@ import typing as t
 import colour
 import nerdfonts
 import numpy as np
+import copy
 
 TAU = np.pi * 2
 
@@ -99,3 +99,7 @@ class Color:
 
 def index_or(container, obj):
     return container.index(obj) if obj in container else None
+
+
+def lerp(a, b, t):
+    return (b - a) * t + a
