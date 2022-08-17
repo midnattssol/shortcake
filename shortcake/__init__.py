@@ -67,8 +67,14 @@ from .size import (
     Size,
     TimeFunction
 )
+from .sliders import (
+    ProgressBar,
+    ProgressCircle,
+    Slider
+)
 from .utils import (
     cartesian2polar,
+    filled,
     get_nf_icon,
     index_or,
     lerp,

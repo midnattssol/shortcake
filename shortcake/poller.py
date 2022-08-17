@@ -5,10 +5,13 @@ import time
 import typing as t
 
 
+@dc.dataclass
 class Poller:
+    """Poll the output of a shell command or a function periodically."""
+
     command: str = "echo 'hello world'"
-    timespan: float = 1
-    formatter = lambda x: x
+    timespan: float = 1 / 30
+    formatter: callable = lambda x: x
 
     last_timestamp = None
     raw = None

@@ -60,7 +60,7 @@ class Renderable:
         if not isinstance(gotten, Size):
             return gotten
 
-        if isinstance(gotten, (Relative, Percentage, ParentFunction)):
+        if isinstance(gotten, (Relative, Percentage, ParentFunction, Offset)):
             parent = object.__getattribute__(self, "parent")
             if parent is None or not hasattr(parent, attr):
                 raise ValueError(
@@ -216,6 +216,7 @@ class Arc(Renderable, Shape):
     radius: float = 20
     begin_arc: float = 0
     end_arc: float = TAU
+    # TODO: Add different endpoints
 
     @property
     def size(self):
@@ -226,8 +227,10 @@ class Arc(Renderable, Shape):
         ctx.set_source_rgba(*self.color)
         center_arr = self.anchor.to_arr() - [0.5, 0.5]
 
+        center = self.position - self.size * center_arr
+
         ctx.arc(
-            *(self.position - self.size * center_arr),
+            *center,
             self.radius,
             self.begin_arc,
             self.end_arc,

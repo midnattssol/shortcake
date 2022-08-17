@@ -7,7 +7,6 @@ import typing as t
 import colour
 import nerdfonts
 import numpy as np
-import copy
 
 TAU = np.pi * 2
 
@@ -103,3 +102,13 @@ def index_or(container, obj):
 
 def lerp(a, b, t):
     return (b - a) * t + a
+
+
+def filled(fn, *shape):
+    # coul be rewritten without recursion
+    if len(shape) > 1:
+        return [filled(fn, *shape[1:]) for _ in range(shape[0])]
+    if len(shape) == 1:
+        return [fn() for _ in range(shape[0])]
+
+    raise ValueError
