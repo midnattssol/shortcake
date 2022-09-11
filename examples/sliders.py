@@ -34,14 +34,18 @@ def get_widgets():
         position=np.array([SIZE[0] / 2, SIZE[1] / 4]),
         size=[200, 15],
         poller=shortcake.Poller(
-            lambda: shortcake.oscillating(0.3, 0.7, shortcake.in_out_back)(time.time())
+            lambda: shortcake.oscillating(0.3, 0.7, shortcake.in_out_elastic)(
+                time.time() / 1.5
+            )
         ),
     )
 
     p = shortcake.ProgressCircle(
         position=SIZE / 2,
         poller=shortcake.Poller(
-            lambda: shortcake.oscillating(0.2, 0.7, shortcake.in_out_cubic)(time.time())
+            lambda: shortcake.oscillating(0.2, 0.7, shortcake.in_out_elastic)(
+                time.time() / 1.5
+            )
         ),
         filler=shortcake.Arc(
             color=shortcake.Color.WHITE,

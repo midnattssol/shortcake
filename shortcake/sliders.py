@@ -21,9 +21,11 @@ class ProgressBar(RoundedRectangle):
     fill_direction: Direction = Direction.HORIZONTAL
 
     def __post_init__(self):
+        """Set the object's parent."""
         self.filler.parent = self
 
     def render(self, ctx):
+        """Render the object."""
         super().render(ctx)
 
         frac = self.poller.get()
@@ -59,9 +61,11 @@ class ProgressCircle(Arc):
     filler: Arc = dc.field(default_factory=Arc)
 
     def __post_init__(self):
+        """Set the object's parent."""
         self.filler.parent = self
 
     def render(self, ctx):
+        """Render the object."""
         frac = self.poller.get()
         frac = min(max(frac, 0), 1)
         self.filler.end_arc = self.filler.begin_arc + frac * TAU
@@ -77,10 +81,10 @@ class Slider(RoundedRectangle):
 
     poller: Poller = Poller(lambda: 0.618)
     pointer: Renderable = None
-    # .LEFT
     fill_direction: Direction = Direction.HORIZONTAL
 
     def __post_init__(self):
+        """Set the object's parent and pointer."""
         if self.pointer is None:
             self.pointer = Arc(
                 radius=min(self.size) / 2,
@@ -91,6 +95,7 @@ class Slider(RoundedRectangle):
         self.pointer.parent = self
 
     def render(self, ctx):
+        """Render the object."""
         super().render(ctx)
 
         frac = self.poller.get()

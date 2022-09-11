@@ -6,7 +6,6 @@ from datetime import datetime
 
 import cairo
 import numpy as np
-
 import shortcake
 
 # Graphics

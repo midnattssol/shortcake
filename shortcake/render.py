@@ -249,6 +249,7 @@ class RoundedRectangle(Rectangle):
 
     def render(self, ctx):
         ctx.set_source_rgba(*self.color)
+        ctx.stroke()
         rounded_rect(ctx, *self.get_top_left(), *self.size, self.radius)
         ctx.fill()
         ctx.stroke()
@@ -372,6 +373,6 @@ class Text(Renderable):
 
 def rounded_rect(ctx, x, y, width, height, radius):
     ctx.arc(x + radius, y + radius, radius, TAU / 2, 3 * TAU / 4)
-    ctx.arc(x + width - radius, y + radius, radius, 3 * TAU / 4, TAU)
+    ctx.arc(x + width - radius, y + radius, radius, 3 * TAU / 4, 0)
     ctx.arc(x + width - radius, y + height - radius, radius, 0, TAU / 4)
     ctx.arc(x + radius, y + height - radius, radius, TAU / 4, TAU / 2)

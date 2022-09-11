@@ -21,11 +21,12 @@ import typing as t
 
 # ===| Constants |===
 
+_TAU = 2 * math.pi
 _C1 = 1.70158
 _C2 = _C1 * 1.525
 _C3 = _C1 + 1
-_C4 = (2 * math.pi) / 3
-_C5 = (2 * math.pi) / 4.5
+_C4 = _TAU / 3
+_C5 = _TAU / 4.5
 
 # ===| Functions |===
 

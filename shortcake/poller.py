@@ -1,4 +1,5 @@
 #!/usr/bin/env python3.10
+"""Pollers that periodically get the output of a Shell command or function."""
 import dataclasses as dc
 import subprocess as sp
 import time
@@ -7,15 +8,15 @@ import typing as t
 
 @dc.dataclass
 class Poller:
-    """Poll the output of a shell command or a function periodically."""
+    """Poll the output of a Shell command or a function periodically."""
 
-    command: str = "echo 'hello world'"
+    command: t.Union[str, callable] = "echo 'hello world'"
     timespan: float = 1 / 30
     formatter: callable = lambda x: x
 
-    last_timestamp = None
-    raw = None
-    process = None
+    last_timestamp: t.Optional[int] = None
+    raw: t.Any = None
+    process: t.Optional[sp.Popen] = None
 
     def get(self):
         """Get the value."""
@@ -24,7 +25,7 @@ class Poller:
             return None
         return self.formatter(self.raw)
 
-    def update(self):
+    def update(self) -> None:
         """Run the command again in case enough time has passed."""
         should_update = (
             self.last_timestamp is None
@@ -35,7 +36,7 @@ class Poller:
             # Call functions normally.
             if callable(self.command):
                 self.raw = self.command()
-                return None
+                return
 
             # Start a new process.
             self.last_timestamp = time.time()

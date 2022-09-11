@@ -1,9 +1,9 @@
 #!/usr/bin/env python3.10
 """Enumerations."""
+import collections as col
 import enum
 
 import numpy as np
-import collections as col
 
 HELD_DOWN = col.defaultdict(lambda: False)
 
@@ -33,10 +33,13 @@ class Anchor(enum.Flag):
     RIGHT = enum.auto()
 
     def to_arr(self) -> np.ndarray:
-        """Turn the enum into an array which when multiplied by the item's size
-        gives the offset from the top left corner at which the item should be drawn."""
-        assert not (self.BOTTOM & self.TOP)
-        assert not (self.LEFT & self.RIGHT)
+        """Turn the enum into an array.
+
+        This array, when multiplied by the item's size, gives the offset
+        from the top left corner at which the item should be drawn.
+        """
+        assert not self.BOTTOM & self.TOP
+        assert not self.LEFT & self.RIGHT
 
         arr = np.array([0.5, 0.5])
 
