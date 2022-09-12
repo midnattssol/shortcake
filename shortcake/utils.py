@@ -8,6 +8,7 @@ import numpy as np
 
 TAU = np.pi * 2
 Numeric = t.Union[int, float, np.ndarray]
+SIZE = np.array([0, 0])
 
 
 def get_nf_icon(name: str) -> str:
@@ -86,10 +87,16 @@ def normalize_color(color):
 class Color:
     """Global colors."""
 
-    BLACK = None
-    WHITE = None
     ACCENT_0 = None
     ACCENT_1 = None
+    ACCENT_2 = None
+    ACCENT_3 = None
+    WHITE = None
+    GREY_L1 = None
+    GREY = None
+    GREY_D1 = None
+    GREY_D2 = None
+    BLACK = None
 
 
 # ===| Misc |===
@@ -103,6 +110,18 @@ def index_or(container: t.Iterable, obj: t.Any) -> t.Optional[int]:
 def lerp(origin: Numeric, target: Numeric, frac: Numeric) -> Numeric:
     """Linearly interpolate between the origin and the target by the fraction."""
     return (target - origin) * frac + origin
+
+
+def lerp_fn(origin: Numeric, target: Numeric, frac: Numeric) -> Numeric:
+    """Linearly interpolate between two functions."""
+
+    def inner(passed: Numeric):
+        o_result = origin(passed)
+        t_result = target(passed)
+
+        return (t_result - o_result) * frac + o_result
+
+    return inner
 
 
 def filled(fn: callable, *shape):

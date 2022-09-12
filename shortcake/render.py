@@ -1,13 +1,9 @@
 #!/usr/bin/env python3.10
 """An updated render system."""
 import dataclasses as dc
-import enum
-import itertools as it
-import time
 import typing as t
 
 import cairo
-import more_itertools as mit
 import numpy as np
 
 from .enums import Anchor, Direction, Packing
@@ -22,7 +18,6 @@ from .size import (
     TimeFunction,
 )
 from .utils import TAU
-
 
 # ===| Text |===
 
@@ -46,6 +41,7 @@ class Renderable:
     anchor: Anchor = Anchor(0)
     position: Size = dc.field(default_factory=lambda: Absolute(np.array([0.0, 0.0])))
     parent: t.Any = None
+    visible: bool = True  # WIP: Add visibility.
 
     def render(self, ctx):
         """Render the item."""
@@ -64,7 +60,9 @@ class Renderable:
             parent = object.__getattribute__(self, "parent")
             if parent is None or not hasattr(parent, attr):
                 raise ValueError(
-                    f"Attribute '{attr}' ({gotten}) of {self} requires a parent with the same attribute, but {parent} lacks it."
+                    f"Attribute '{attr}' ({gotten}) of {self} of type {type(self)} requires"
+                    f" a parent with the same attribute, but {parent} of type {type(parent)}"
+                    " lacks it."
                 )
 
             return gotten.get(parent.get(attr), parent)
@@ -72,6 +70,7 @@ class Renderable:
         return gotten.get()
 
     def __getattribute__(self, name):
+        """Get the attribute, resolving Sizes."""
         if (name.startswith("__") and name.endswith("__")) or name == "get":
             return object.__getattribute__(self, name)
 
@@ -84,7 +83,12 @@ class Sized(Renderable):
 
     size: Size = dc.field(default_factory=lambda: Relative(np.array([0.5, 0.5])))
 
+    def render(self, ctx):
+        """Render the item."""
+        raise NotImplementedError()
+
     def get_top_left(self):
+        """Get the top-left corner of the renderaböe."""
         return self.position - self.size * self.anchor.to_arr()
 
 
@@ -97,7 +101,8 @@ class Container(Sized):
     children: t.List[Renderable] = dc.field(default_factory=list)
     spacing: int = 5
 
-    def make_grid(self, items, scale=[1, 1]):
+    def make_grid(self, items, scale=(1, 1)):
+        """Create a grid of items."""
         assert items
         assert len(set(map(len, items))) == 1
 
@@ -117,10 +122,11 @@ class Container(Sized):
             self.children += row
 
     def render(self, ctx):
+        """Render the container."""
         if self.packing == Packing.NONE or not self.children:
             for child in self.children:
                 child.render(ctx)
-            return None
+            return
 
         # Recalculate the positions based on the packing.
         i = int(self.direction == Direction.HORIZONTAL)
@@ -177,8 +183,7 @@ class Container(Sized):
             locations = [[c, l + avg_pos] for c, l in locations]
 
         if self.packing == Packing.END:
-            size = self.size.copy()
-            locations = [[c, size - l] for c, l in locations]
+            locations = [[c, self.size - l] for c, l in locations]
 
         for child, loc in locations:
             child.position = loc + self.get_top_left()
@@ -186,14 +191,18 @@ class Container(Sized):
             child.render(ctx)
 
     def __iter__(self):
+        """Iterate over the children."""
         return iter(self.children)
 
     def __len__(self):
+        """Get the number of children."""
         return len(self.children)
 
 
 @dc.dataclass
 class Shape:
+    """Abstract base class for a shape."""
+
     color: ... = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
     filled: bool = True
     width: int = 3
@@ -201,7 +210,10 @@ class Shape:
 
 @dc.dataclass
 class Rectangle(Shape, Container):
+    """A rectangle."""
+
     def render(self, ctx):
+        """Render the rectangle."""
         ctx.new_path()
         ctx.set_source_rgba(*self.color)
         ctx.rectangle(*self.get_top_left(), *self.get("size"))
@@ -213,16 +225,19 @@ class Rectangle(Shape, Container):
 
 @dc.dataclass
 class Arc(Renderable, Shape):
+    """An arc."""
+
     radius: float = 20
     begin_arc: float = 0
     end_arc: float = TAU
-    # TODO: Add different endpoints
 
     @property
     def size(self):
-        return np.array([self.radius, self.radius])
+        """Get the size of the arc."""
+        return np.array([self.radius, self.radius]) * 2
 
     def render(self, ctx):
+        """Render the arc."""
         ctx.new_path()
         ctx.set_source_rgba(*self.color)
         center_arr = self.anchor.to_arr() - [0.5, 0.5]
@@ -245,9 +260,12 @@ class Arc(Renderable, Shape):
 
 @dc.dataclass
 class RoundedRectangle(Rectangle):
+    """A rounded rectangle. The radius attribute determines the corner rounding."""
+
     radius: float = 8
 
     def render(self, ctx):
+        """Render the rounded rectangle."""
         ctx.set_source_rgba(*self.color)
         ctx.stroke()
         rounded_rect(ctx, *self.get_top_left(), *self.size, self.radius)
@@ -269,6 +287,8 @@ class TextState:
 
 @dc.dataclass
 class ColoredText(Renderable):
+    """Some colored text."""
+
     font: str = "Iosevka Nerd Font"
     font_size: int = 20
     text: str = "Hello world"
@@ -277,7 +297,6 @@ class ColoredText(Renderable):
 
     def get_state(self, index):
         """Return the state at some index."""
-
         state = self.default_state
 
         for key in sorted(self.escape_indices):
@@ -302,7 +321,7 @@ class ColoredText(Renderable):
         ctx.select_font_face(
             self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
         )
-        (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
+        (_, _, width, height, _, _) = ctx.text_extents(self.text)
         height = self.font_size
 
         pos = self.position - ([width, height] * self.anchor.to_arr())
@@ -342,28 +361,47 @@ class ColoredText(Renderable):
 
 @dc.dataclass
 class Text(Renderable):
-    color: ... = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
+    """Some text."""
+
+    color: ... = dc.field(default_factory=lambda: np.array([0.3, 0.25, 0.1]))
     text: str = "Hello world!"
     font_size: int = 20
     font_face: str = "Iosevka Nerd Font"
     font_slant: int = cairo.FONT_SLANT_NORMAL
     font_weight: int = cairo.FONT_WEIGHT_NORMAL
 
+    use_font_size_as_y: bool = True
+
     def render(self, ctx):
+        """Render the text."""
         ctx.select_font_face(self.font_face, self.font_slant, self.font_weight)
         ctx.set_font_size(self.font_size)
         ctx.set_source_rgba(*self.color)
 
-        (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
-        height = self.font_size
+        (_, _, width, height, _, _) = ctx.text_extents(self.text)
 
-        ctx.move_to(*self.position - ([width, height] * self.anchor.to_arr()))
+        if self.use_font_size_as_y:
+            height = self.font_size
+
+        ctx.move_to(
+            *self.position - ([width, height] * (self.anchor.to_arr() - [0, 1]))
+        )
         ctx.show_text(self.text)
         ctx.stroke()
 
         # # DEBUG: Uncomment this to see circles.
         # ctx.set_source_rgba(1, 0.2, 0, 1)
-        # ctx.arc(*self.position - ([width, height] * self.anchor.to_arr()), 4, 0, TAU)
+        # ctx.arc(
+        #     *self.position - ([width, height] * (self.anchor.to_arr() - [0, 1])),
+        #     4,
+        #     0,
+        #     TAU,
+        # )
+        # ctx.fill()
+        # ctx.stroke()
+        #
+        # ctx.set_source_rgba(1, 0.2, 1, 1)
+        # ctx.arc(*self.position, 4, 0, TAU)
         # ctx.fill()
         # ctx.stroke()
 
@@ -371,8 +409,14 @@ class Text(Renderable):
 # ===| Utilities |===
 
 
-def rounded_rect(ctx, x, y, width, height, radius):
-    ctx.arc(x + radius, y + radius, radius, TAU / 2, 3 * TAU / 4)
-    ctx.arc(x + width - radius, y + radius, radius, 3 * TAU / 4, 0)
-    ctx.arc(x + width - radius, y + height - radius, radius, 0, TAU / 4)
-    ctx.arc(x + radius, y + height - radius, radius, TAU / 4, TAU / 2)
+def rounded_rect(ctx, x, y, width, height, radius) -> None:
+    """Draw a rounded rectangle."""
+    x_0 = x + radius
+    x_1 = x + width - radius
+    y_0 = y + radius
+    y_1 = y + height - radius
+
+    ctx.arc(x_0, y_0, radius, TAU / 2, 3 * TAU / 4)
+    ctx.arc(x_1, y_0, radius, 3 * TAU / 4, 0)
+    ctx.arc(x_1, y_1, radius, 0, TAU / 4)
+    ctx.arc(x_0, y_1, radius, TAU / 4, TAU / 2)

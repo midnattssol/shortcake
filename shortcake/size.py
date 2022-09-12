@@ -47,50 +47,72 @@ from .interpolate import (
 # ===| Sizes |===
 @dc.dataclass
 class Size:
-    n: float
+    """A size."""
+
+    n: t.Union[float, callable]
 
 
 @dc.dataclass
 class Absolute(Size):
+    """An absolute size."""
+
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         return self.n
 
 
 @dc.dataclass
 class Relative(Size):
+    """A size calculated as a fraction of the relevant attribute of the parent object."""
+
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         return self.n * parent_size
 
 
 @dc.dataclass
 class Percentage(Size):
+    """A size calculated as a percentage of the relevant attribute of the parent object."""
+
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         return self.n * parent_size * 100
 
 
 @dc.dataclass
 class Offset(Size):
+    """A size which is offset from the parent object by some amount."""
+
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         return self.n + parent_size
 
 
 @dc.dataclass
 class ParentFunction(Size):
+    """A size which is a function of the parent object."""
+
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         return self.n(parent_size, parent)
 
 
 @dc.dataclass
 class TimeFunction(Size):
+    """A size which is a function of time."""
+
     start_time: float = dc.field(default_factory=time.time)
 
     def get(self, parent_size=None, parent=None):
+        """Get the value of the size."""
         dt = time.time() - self.start_time
         return self.n(dt)
 
 
 @dc.dataclass
 class Easing(Size):
+    """A size defined as an easing between two values."""
+
     target: t.Any
     period: float
     start_time: float = dc.field(default_factory=time.time)
@@ -101,6 +123,7 @@ class Easing(Size):
 
     @property
     def origin(self):
+        """Get the origin of the easing."""
         return self.n
 
     @property
@@ -112,6 +135,7 @@ class Easing(Size):
         return self._is_expired
 
     def get_frac(self):
+        """Get the current fraction of time passed to expiration."""
         frac = (time.time() - self.start_time) / self.period
         if self.clamp:
             frac = min(max(frac, 0), 1)

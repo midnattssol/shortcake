@@ -78,10 +78,12 @@ from .utils import (
     get_nf_icon,
     index_or,
     lerp,
+    lerp_fn,
     normalize_color,
     polar2cartesian,
     rotate2d,
     rotating_interpolation,
     Color,
+    SIZE,
     TAU
 )
