@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 from .enums import (
     Anchor,
     Direction,
@@ -59,6 +59,7 @@ from .render import (
 )
 from .size import (
     Absolute,
+    ContinousEasingSequence,
     Easing,
     Offset,
     ParentFunction,
@@ -75,15 +76,18 @@ from .sliders import (
 from .utils import (
     cartesian2polar,
     filled,
-    get_nf_icon,
     index_or,
+    is_rectangular,
+    isiterable,
     lerp,
     lerp_fn,
     normalize_color,
     polar2cartesian,
     rotate2d,
     rotating_interpolation,
+    shape_of,
     Color,
+    PHI,
     SIZE,
     TAU
 )

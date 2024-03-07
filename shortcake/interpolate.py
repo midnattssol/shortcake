@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """Easing functions taken from easings.net.
 
 Included easings
@@ -15,9 +15,10 @@ ease_quart
 ease_quint
 ease_sine
 """
-
+from __future__ import annotations
 import math
 import typing as t
+import dataclasses as dc
 
 # ===| Constants |===
 
@@ -56,13 +57,9 @@ def easing_average(easings, weights=None):
     """Returns a unary function which returns the average of the unary functions."""
 
     def easing_inner(x: float) -> float:
-        weights = list(
-            weights if weights is not None else (map(((lambda _=None: 1)), easings))
-        )
+        weights = list(weights if weights is not None else (map(((lambda _=None: 1)), easings)))
 
-        return sum(f(x) * w for f, w in zip(easings, weights, strict=True)) / (
-            sum(weights)
-        )
+        return sum(f(x) * w for f, w in zip(easings, weights, strict=True)) / (sum(weights))
 
     return easing_inner
 
@@ -215,11 +212,7 @@ def in_out_circ(x: float) -> float:
         return 0
     if x == 1:
         return 1
-    return (
-        (1 - math.sqrt(1 - pow(2 * x, 2))) / 2
-        if x < 0.5
-        else (math.sqrt(1 - pow(-2 * x + 2, 2)) + 1) / 2
-    )
+    return (1 - math.sqrt(1 - pow(2 * x, 2))) / 2 if x < 0.5 else (math.sqrt(1 - pow(-2 * x + 2, 2)) + 1) / 2
 
 
 def in_back(x: float) -> float:
@@ -297,11 +290,7 @@ def out_bounce(x: float) -> float:
         return 0
     if x == 1:
         return 1
-    return (
-        (1 - _bounce_out(1 - 2 * x)) / 2
-        if x < 0.5
-        else (1 + _bounce_out(2 * x - 1)) / 2
-    )
+    return (1 - _bounce_out(1 - 2 * x)) / 2 if x < 0.5 else (1 + _bounce_out(2 * x - 1)) / 2
 
 
 def in_out_bounce(x: float) -> float:

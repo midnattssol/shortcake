@@ -1,5 +1,6 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """Progress widgets."""
+from __future__ import annotations
 import dataclasses as dc
 
 import numpy as np
@@ -14,10 +15,8 @@ from .utils import *
 class ProgressBar(RoundedRectangle):
     """A rounded rectangular progress bar."""
 
-    poller: Poller = Poller(lambda: 0.618)
-    filler: RoundedRectangle = dc.field(
-        default_factory=lambda: RoundedRectangle(anchor=Anchor.LEFT)
-    )
+    poller: Poller = dc.field(default_factory=Poller(lambda: 0.618))
+    filler: RoundedRectangle = dc.field(default_factory=lambda: RoundedRectangle(anchor=Anchor.LEFT))
     fill_direction: Direction = Direction.HORIZONTAL
 
     def __post_init__(self):
@@ -29,13 +28,12 @@ class ProgressBar(RoundedRectangle):
         super().render(ctx)
 
         frac = self.poller.get()
-        # Make sure the fraction isn't so small that the rendered with would be less than twice the radius, since this messes up it a lot.
         frac = min(max(frac, 0), 1)
+
+        # Make sure the fraction isn't way too small.
         frac = max(
             frac,
-            self.filler.radius
-            * 2
-            / self.size[self.fill_direction == Direction.VERTICAL],
+            self.filler.radius * 2 / self.size[self.fill_direction == Direction.VERTICAL],
         )
 
         scaler = [1, frac] if self.fill_direction == Direction.VERTICAL else [frac, 1]
@@ -44,9 +42,7 @@ class ProgressBar(RoundedRectangle):
 
         filler_anchor = self.filler.anchor
 
-        self.filler.position = self.get_top_left() + (
-            self.filler.anchor.to_arr() * self.size
-        )
+        self.filler.position = self.get_top_left() + (self.filler.anchor.to_arr() * self.size)
         self.filler.anchor = Anchor(0)
         self.filler.size = Relative(np.array(scaler))
         self.filler.anchor = filler_anchor
@@ -57,7 +53,7 @@ class ProgressBar(RoundedRectangle):
 class ProgressCircle(Arc):
     """A circular progress bar."""
 
-    poller: Poller = Poller(lambda: 0.618)
+    poller: Poller = dc.field(default_factory=Poller(lambda: 0.618))
     filler: Arc = dc.field(default_factory=Arc)
 
     def __post_init__(self):
@@ -79,7 +75,7 @@ class ProgressCircle(Arc):
 class Slider(RoundedRectangle):
     """A rounded rectangular slider."""
 
-    poller: Poller = Poller(lambda: 0.618)
+    poller: Poller = dc.field(default_factory=lambda: Poller(lambda: 0.618))
     pointer: Renderable = None
     fill_direction: Direction = Direction.HORIZONTAL
 
@@ -101,9 +97,7 @@ class Slider(RoundedRectangle):
         frac = self.poller.get()
         frac = min(max(frac, 0), 1)
 
-        scaler = np.array(
-            [0.5, frac] if self.fill_direction == Direction.VERTICAL else [frac, 0.5]
-        )
+        scaler = np.array([0.5, frac] if self.fill_direction == Direction.VERTICAL else [frac, 0.5])
 
         assert self.pointer.parent is self
 

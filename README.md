@@ -1,8 +1,9 @@
 # shortcake
 
-Shortcake is a Gdk library.
+Shortcake is a Gdk library for making widgets.
 
 ## todo
 
 - Non-filled arcs
-- Polygons (constructors for regular ones)
+- Constructors for regular polygons
+- See to which extent functions can be merged with the animations library

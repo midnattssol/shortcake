@@ -2,4 +2,5 @@
 set -eux pipefail
 
 pybuild pybuild.cson
-pip install .
+
+cloc shortcake > info/sloc.txt

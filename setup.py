@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """Setup the package."""
 import setuptools
 
@@ -8,7 +8,7 @@ setuptools.setup(
     description="A private Gdk library",
     url="#",
     author="luna",
-    install_requires=["numpy", "pycairo", "more_itertools", "colour", "nerdfonts"],
+    install_requires=["numpy", "pycairo", "more_itertools", "colour", "nerdfonts_patched"],
     author_email="",
     packages=setuptools.find_packages(),
     zip_safe=False,

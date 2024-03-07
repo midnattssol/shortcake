@@ -1,5 +1,6 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """Enumerations."""
+from __future__ import annotations
 import collections as col
 import enum
 
@@ -53,3 +54,10 @@ class Anchor(enum.Flag):
             arr[1] = 0
 
         return arr
+
+
+Anchor.CENTER = Anchor(0)
+Anchor.TOP_LEFT = Anchor.LEFT | Anchor.TOP
+Anchor.TOP_RIGHT = Anchor.RIGHT | Anchor.TOP
+Anchor.BOTTOM_LEFT = Anchor.LEFT | Anchor.BOTTOM
+Anchor.BOTTOM_RIGHT = Anchor.RIGHT | Anchor.BOTTOM

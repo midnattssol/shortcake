@@ -1,29 +1,64 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """Utilities."""
+from __future__ import annotations
+import itertools as it
 import typing as t
 
 import colour
-import nerdfonts
 import numpy as np
+
+# ===| Constants |===
 
 TAU = np.pi * 2
 Numeric = t.Union[int, float, np.ndarray]
 SIZE = np.array([0, 0])
-
-
-def get_nf_icon(name: str) -> str:
-    """Get a nerd font icon from its name."""
-
-    def nerdify(name):
-        return name.removeprefix("nf-").replace("-", "_")
-
-    if name is None or (norm_name := nerdify(name)) not in nerdfonts.icons:
-        norm_name = nerdify("fa-question_circle_o")
-
-    return nerdfonts.icons[norm_name]
+PHI = (1 + np.sqrt(5)) / 2
 
 
 # ===| Coordinates |===
+
+
+def isiterable(item: object) -> bool:
+    """Get whether or not an object is iterable."""
+    return hasattr(item, "__iter__")
+
+
+def shape_of(nested: iter, dims=2) -> bool:
+    """Get the shape of a nested iterable."""
+    assert isinstance(dims, int) and dims > 0, dims
+    if not is_rectangular(nested, dims):
+        return None
+
+    top = nested
+    out = [len(top)]
+    for _ in range(dims - 1):
+        top = top[0]
+        out.append(len(top))
+    return out
+
+
+def is_rectangular(nested: iter, dims: int = 2) -> bool:
+    """Get whether or not a nested iterable is (hyper?)rectangular.
+
+    >>> is_rectangular([[1, 2, 3], [1, 2]])
+    False
+    >>> is_rectangular([[1, 2, 3], [1, 2, 3]])
+    True
+    """
+    assert isinstance(dims, int) and dims > 0, dims
+    if dims == 1:
+        return isiterable(nested)
+
+    lengths = map(len, nested)
+    prev = None
+    for length in lengths:
+        if prev is not None and length != prev:
+            return False
+        prev = length
+
+    if dims > 2:
+        return all(map(is_rectangular, nested, it.repeat(dims - 1)))
+    return True
 
 
 def polar2cartesian(coords: Numeric) -> Numeric:
@@ -51,7 +86,6 @@ def rotate2d(arr: np.ndarray, angle: float) -> np.ndarray:
     sin = np.sin(angle)
 
     rotated = np.dot(arr, np.array([[cos, -sin], [sin, cos]]))
-
     return rotated
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 """A skeleton widget."""
 import math
 import time
@@ -50,9 +50,7 @@ def get_widgets():
                 shortcake.Arc(
                     radius=20,
                     color=shortcake.TimeFunction(
-                        shortcake.oscillating(
-                            shortcake.Color.ACCENT_0, shortcake.Color.WHITE
-                        )
+                        shortcake.oscillating(shortcake.Color.ACCENT_0, shortcake.Color.WHITE)
                     ),
                 )
                 for _ in range(r)

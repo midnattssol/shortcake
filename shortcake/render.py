@@ -1,5 +1,8 @@
-#!/usr/bin/env python3.10
+#!/usr/bin/env python3.11
 """An updated render system."""
+from __future__ import annotations
+
+import copy as cp
 import dataclasses as dc
 import typing as t
 
@@ -7,22 +10,8 @@ import cairo
 import numpy as np
 
 from .enums import Anchor, Direction, Packing
-from .size import (
-    Absolute,
-    Easing,
-    Offset,
-    ParentFunction,
-    Percentage,
-    Relative,
-    Size,
-    TimeFunction,
-)
-from .utils import TAU
-
-# ===| Text |===
-
-Color = str
-
+from .size import Absolute, Easing, Offset, ParentFunction, Percentage, Relative, Size, TimeFunction
+from .utils import TAU, is_rectangular, shape_of
 
 # ===| Base classes |===
 
@@ -38,7 +27,7 @@ class Renderable:
     To get the unwrapped attribute, use the `get` method with `unwrap` set to False.
     """
 
-    anchor: Anchor = Anchor(0)
+    anchor: Anchor = Anchor.CENTER
     position: Size = dc.field(default_factory=lambda: Absolute(np.array([0.0, 0.0])))
     parent: t.Any = None
     visible: bool = True  # WIP: Add visibility.
@@ -46,6 +35,12 @@ class Renderable:
     def render(self, ctx):
         """Render the item."""
         raise NotImplementedError()
+
+    # ===| Derived methods |===
+
+    def copy(self):
+        """Get a copy of the item."""
+        return cp.deepcopy(self)
 
     def get(self, attr, unwrap=True):
         """Get the object attribute."""
@@ -88,8 +83,17 @@ class Sized(Renderable):
         raise NotImplementedError()
 
     def get_top_left(self):
-        """Get the top-left corner of the renderaböe."""
-        return self.position - self.size * self.anchor.to_arr()
+        """Get the top-left corner of the sized item."""
+        out = self.position - self.size * self.anchor.to_arr()
+        return out
+
+    def get_anchor_coord(self, anchor: Anchor = Anchor.CENTER):
+        """Get the coordinates at this anchor in the sized item.
+
+        For example, sized.get_anchor_coord(Anchor.BOTTOM) will get
+        the position of the bottom centre coordinate of the Sized.
+        """
+        return self.position - (self.size * (self.anchor.to_arr() - anchor.to_arr()))
 
 
 @dc.dataclass
@@ -103,23 +107,27 @@ class Container(Sized):
 
     def make_grid(self, items, scale=(1, 1)):
         """Create a grid of items."""
-        assert items
-        assert len(set(map(len, items))) == 1
-
-        rows, cols = len(items), len(items[0])
+        assert items and is_rectangular(items), items
+        rows, cols = shape_of(items)
 
         for i, row in enumerate(items):
             for j, item in enumerate(row):
                 item.parent = self
-                k = np.array([i / (rows - 1), j / (cols - 1)])
-                k -= 0.5
-                k *= scale
+                anchor_like = np.array([i / (rows - 1), j / (cols - 1)])
+                anchor_like -= 0.5
+                anchor_like *= scale
 
                 item.position = ParentFunction(
-                    lambda pos, parent, k=k: k * parent.size + pos
+                    lambda pos, parent, k=anchor_like: parent.size * (k) + parent.get_anchor_coord(Anchor.CENTER)
                 )
 
             self.children += row
+
+    def occupied_space(self) -> float:
+        """Get the current amount of space along the relevant direction taken up by packed items."""
+        assert self.packing is not Packing.NONE
+        i = int(self.direction == Direction.HORIZONTAL)
+        return sum(child.size[i] + 2 * self.spacing for child in self) - self.spacing
 
     def render(self, ctx):
         """Render the container."""
@@ -133,7 +141,7 @@ class Container(Sized):
         i_0 = int(not i)
 
         rel_pos = np.array([0.0, 0.0])
-        rel_pos[i] += self.spacing
+        rel_pos[i] -= self.spacing
         # rel_pos[i] += self.children[0].size[i] / 2
 
         locations = []
@@ -160,13 +168,13 @@ class Container(Sized):
         new_anchor = (
             {
                 Packing.START: Anchor.TOP,
-                Packing.CENTER: Anchor(0),
+                Packing.CENTER: Anchor.CENTER,
                 Packing.END: Anchor.BOTTOM,
             }[self.packing]
             if self.direction == Direction.HORIZONTAL
             else {
                 Packing.START: Anchor.LEFT,
-                Packing.CENTER: Anchor(0),
+                Packing.CENTER: Anchor.CENTER,
                 Packing.END: Anchor.RIGHT,
             }[self.packing]
         )
@@ -182,13 +190,16 @@ class Container(Sized):
             avg_pos[i_0] = 0
             locations = [[c, l + avg_pos] for c, l in locations]
 
+        # End pack by moving everything down as far as the emepty space allows.
         if self.packing == Packing.END:
             locations = [[c, self.size - l] for c, l in locations]
 
         for child, loc in locations:
             child.position = loc + self.get_top_left()
-            child = dc.replace(child, anchor=new_anchor)
+            old_anchor = child.anchor
+            child.anchor = new_anchor
             child.render(ctx)
+            child.anchor = old_anchor
 
     def __iter__(self):
         """Iterate over the children."""
@@ -203,7 +214,7 @@ class Container(Sized):
 class Shape:
     """Abstract base class for a shape."""
 
-    color: ... = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
+    color: Color = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
     filled: bool = True
     width: int = 3
 
@@ -244,12 +255,7 @@ class Arc(Renderable, Shape):
 
         center = self.position - self.size * center_arr
 
-        ctx.arc(
-            *center,
-            self.radius,
-            self.begin_arc,
-            self.end_arc,
-        )
+        ctx.arc(*center, self.radius, self.begin_arc, self.end_arc)
 
         if abs(self.begin_arc - self.end_arc) != TAU:
             ctx.line_to(*center)
@@ -262,13 +268,13 @@ class Arc(Renderable, Shape):
 class RoundedRectangle(Rectangle):
     """A rounded rectangle. The radius attribute determines the corner rounding."""
 
-    radius: float = 8
+    corner_radius: float = 8
 
     def render(self, ctx):
         """Render the rounded rectangle."""
         ctx.set_source_rgba(*self.color)
         ctx.stroke()
-        rounded_rect(ctx, *self.get_top_left(), *self.size, self.radius)
+        rounded_rect(ctx, *self.get_top_left(), *self.size, self.corner_radius)
         ctx.fill()
         ctx.stroke()
 
@@ -280,7 +286,6 @@ class TextState:
     """The state of some text."""
 
     fore: Color = dc.field(default_factory=lambda: np.array([0.1, 0.1, 0.1]))
-    # back: Color = None
     slant: int = cairo.FONT_SLANT_NORMAL
     weight: int = cairo.FONT_WEIGHT_NORMAL
 
@@ -309,18 +314,12 @@ class ColoredText(Renderable):
     def set_state(self, start: int, end: int, state: TextState):
         """Set the state between the start and end indices."""
         self.escape_indices[start] = state
-        self.escape_indices = {
-            k: v
-            for k, v in self.escape_indices.items()
-            if k not in range(start + 1, end)
-        }
+        self.escape_indices = {k: v for k, v in self.escape_indices.items() if k not in range(start + 1, end)}
         self.escape_indices[end] = self.default_state
 
     def render(self, ctx):
         """Render the text."""
-        ctx.select_font_face(
-            self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
-        )
+        ctx.select_font_face(self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         (_, _, width, height, _, _) = ctx.text_extents(self.text)
         height = self.font_size
 
@@ -332,9 +331,7 @@ class ColoredText(Renderable):
         prev_index = 0
 
         for index in keys:
-            x_distance = self._render_chunk(
-                self.text[prev_index:index], prev_state, pos, ctx
-            )
+            x_distance = self._render_chunk(self.text[prev_index:index], prev_state, pos, ctx)
             pos += [x_distance, 0]
             prev_index = index
             prev_state = self.escape_indices[index]
@@ -383,9 +380,7 @@ class Text(Renderable):
         if self.use_font_size_as_y:
             height = self.font_size
 
-        ctx.move_to(
-            *self.position - ([width, height] * (self.anchor.to_arr() - [0, 1]))
-        )
+        ctx.move_to(*self.position - ([width, height] * (self.anchor.to_arr() - [0, 1])))
         ctx.show_text(self.text)
         ctx.stroke()
 

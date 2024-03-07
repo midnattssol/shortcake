@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.11
 """A skeleton widget."""
 import math
 import time
 from datetime import datetime
 
-import cairo
 import numpy as np
 
-import shortcake
+import shortcake as sc
 
-# Graphics
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -30,30 +28,22 @@ WIDGETS = []
 def get_widgets():
     global WIDGETS
 
-    s = shortcake.Slider(
+    slider = sc.Slider(
         position=np.array([SIZE[0] / 2, SIZE[1] / 4]),
         size=[200, 15],
-        poller=shortcake.Poller(
-            lambda: shortcake.oscillating(0.3, 0.7, shortcake.in_out_elastic)(
-                time.time() / 1.5
-            )
-        ),
+        poller=sc.Poller(lambda: sc.oscillating(0.3, 0.7, sc.in_out_elastic)(time.time() / 1.5)),
     )
 
-    p = shortcake.ProgressCircle(
+    progress = sc.ProgressCircle(
         position=SIZE / 2,
-        poller=shortcake.Poller(
-            lambda: shortcake.oscillating(0.2, 0.7, shortcake.in_out_elastic)(
-                time.time() / 1.5
-            )
-        ),
-        filler=shortcake.Arc(
-            color=shortcake.Color.WHITE,
-            position=shortcake.Offset(0),
+        poller=sc.Poller(lambda: sc.oscillating(0.2, 0.7, sc.in_out_elastic)(time.time() / 1.5)),
+        filler=sc.Arc(
+            color=sc.Color.WHITE,
+            position=sc.Offset(0),
         ),
     )
 
-    WIDGETS = [p, s]
+    WIDGETS = [progress, slider]
 
 
 def draw(da, ctx):
@@ -106,10 +96,10 @@ def main():
         "#133845",
     ]
 
-    shortcake.Color.WHITE = shortcake.normalize_color(colors[0])
-    shortcake.Color.BLACK = shortcake.normalize_color(colors[1])
-    shortcake.Color.ACCENT_0 = shortcake.normalize_color(colors[2])
-    shortcake.Color.ACCENT_1 = shortcake.normalize_color(colors[3])
+    sc.Color.WHITE = sc.normalize_color(colors[0])
+    sc.Color.BLACK = sc.normalize_color(colors[1])
+    sc.Color.ACCENT_0 = sc.normalize_color(colors[2])
+    sc.Color.ACCENT_1 = sc.normalize_color(colors[3])
 
     get_widgets()
 
