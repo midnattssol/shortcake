@@ -7,7 +7,7 @@ setuptools.setup(
     version="0.1",
     description="A private Gdk library",
     url="#",
-    author="luna",
+    author="midnattssol",
     install_requires=["numpy", "pycairo", "more_itertools", "colour", "nerdfonts_patched"],
     author_email="",
     packages=setuptools.find_packages(),

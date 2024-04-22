@@ -16,9 +16,10 @@ ease_quint
 ease_sine
 """
 from __future__ import annotations
+
+import dataclasses as dc
 import math
 import typing as t
-import dataclasses as dc
 
 # ===| Constants |===
 

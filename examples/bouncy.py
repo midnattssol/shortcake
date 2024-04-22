@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.11
-"""A skeleton widget."""
+"""A square which moves up and down, easing its position."""
 import math
 import time
 from datetime import datetime
@@ -39,7 +39,6 @@ def get_widgets():
         ),
         size=[200, 100],
         direction=shortcake.Direction.VERTICAL,
-        # direction=Direction.HORIZONTAL,
     )
 
     r, c = 3, 4
@@ -58,21 +57,6 @@ def get_widgets():
             for _ in range(c)
         ]
     )
-
-    # rectangle.children = [
-    #     shortcake.RoundedRectangle(size=[20, 30], color=shortcake.Color.ACCENT_0),
-    #     shortcake.RoundedRectangle(size=[60, 30], color=shortcake.Color.ACCENT_0),
-    #     shortcake.RoundedRectangle(
-    #         size=[30, 40],
-    #         color=shortcake.Easing(
-    #             shortcake.Color.ACCENT_0,
-    #             shortcake.Color.WHITE,
-    #             2,
-    #             easing=easings.in_out_back,
-    #         ),
-    #         anchor=Anchor.BOTTOM | Anchor.RIGHT,
-    #     ),
-    # ]
 
     WIDGETS = [rectangle]
 

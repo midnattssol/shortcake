@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.11
 """Pollers that periodically get the output of a shell command or function."""
 from __future__ import annotations
+
 import dataclasses as dc
 import subprocess as sp
 import time
