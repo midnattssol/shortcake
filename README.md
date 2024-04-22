@@ -1,6 +1,6 @@
 # shortcake
 
-![An example widget made with Shortcake](/images/demo_screenshot.png)
+![An example widget made with Shortcake](/info/demo_screenshot.png)
 
 Shortcake is a personal Gdk library for making widgets, with various tools for easings, polling functions over time, and CSS-like size inheritance.
 
